@@ -149,6 +149,8 @@ dmypy.json
 
 # datasets and projects (ignore /datasets dir at root only to allow for docs/en/datasets dir)
 /datasets
+/datasets/
+/transfer/
 runs/
 wandb/
 .DS_Store
@@ -161,6 +163,11 @@ weights/
 *.pb
 *.onnx
 *.engine
+*.pth
+*.tar
+*.tar.gz
+*.zip
+*.cache
 *.mlmodel
 *.mlpackage
 *.torchscript

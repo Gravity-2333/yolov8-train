@@ -76,6 +76,7 @@ from .conv import (
     RepConv,
     SpatialAttention,
 )
+from .dental_neck import BiFPN_Add2, BiFPN_Add3, DentalECA
 from .head import (
     OBB,
     OBB26,
@@ -130,6 +131,8 @@ __all__ = (
     "ADown",
     "Attention",
     "BNContrastiveHead",
+    "BiFPN_Add2",
+    "BiFPN_Add3",
     "Bottleneck",
     "BottleneckCSP",
     "C2f",
@@ -153,6 +156,7 @@ __all__ = (
     "DeformableTransformerDecoder",
     "DeformableTransformerDecoderLayer",
     "Detect",
+    "DentalECA",
     "Focus",
     "GhostBottleneck",
     "GhostConv",

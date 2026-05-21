@@ -1,0 +1,10 @@
+# Copy this file and change path before local use.
+path: /path/to/dental_lesion_3cls_large_v1
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: Caries
+  1: Periapical Lesion
+  2: Deep Caries

@@ -1,0 +1,10 @@
+# Dental lesion 3-class dataset on the training server.
+path: /root/autodl-tmp/work/datasets_yolo8/dental_lesion_3cls_large_v1
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: Caries
+  1: Periapical Lesion
+  2: Deep Caries
