@@ -94,6 +94,7 @@ def main() -> None:
         "degrees": 5.0,
         "translate": 0.05,
         "scale": 0.3,
+        "plots": False,
     }
     if args.device != "":
         train_kwargs["device"] = args.device
