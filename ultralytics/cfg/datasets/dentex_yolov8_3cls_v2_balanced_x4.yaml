@@ -1,0 +1,10 @@
+path: /root/autodl-tmp/work/datasets_yolo8/dentex_yolov8_3cls_v2
+train: /root/autodl-tmp/work/yolov8-train/reports/balanced_lists/dentex_v2_train_balanced_periapical_x4_impacted_x2.txt
+val: images/val
+test: images/test
+
+nc: 3
+names:
+  0: Caries
+  1: Periapical Lesion
+  2: Impacted
