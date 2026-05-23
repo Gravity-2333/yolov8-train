@@ -171,6 +171,35 @@ def bbox_iou(
     return iou  # IoU
 
 
+def bbox_nwd_similarity(
+    box1: torch.Tensor,
+    box2: torch.Tensor,
+    xywh: bool = True,
+    constant: float = 12.8,
+    eps: float = 1e-7,
+) -> torch.Tensor:
+    """Calculate Normalized Gaussian Wasserstein Distance similarity between bounding boxes.
+
+    The output is a similarity in ``(0, 1]`` where values closer to 1 indicate more similar boxes. This helper is kept
+    separate from ``bbox_iou`` so default IoU/CIoU behavior remains unchanged.
+    """
+    if xywh:
+        cx1, cy1, w1, h1 = box1.chunk(4, -1)
+        cx2, cy2, w2, h2 = box2.chunk(4, -1)
+        w1, h1 = w1.clamp_min(eps), h1.clamp_min(eps)
+        w2, h2 = w2.clamp_min(eps), h2.clamp_min(eps)
+    else:
+        x1, y1, x2, y2 = box1.chunk(4, -1)
+        x1g, y1g, x2g, y2g = box2.chunk(4, -1)
+        cx1, cy1 = (x1 + x2) / 2, (y1 + y2) / 2
+        cx2, cy2 = (x1g + x2g) / 2, (y1g + y2g) / 2
+        w1, h1 = (x2 - x1).clamp_min(eps), (y2 - y1).clamp_min(eps)
+        w2, h2 = (x2g - x1g).clamp_min(eps), (y2g - y1g).clamp_min(eps)
+
+    wasserstein_2 = (cx1 - cx2).pow(2) + (cy1 - cy2).pow(2) + ((w1 - w2).pow(2) + (h1 - h2).pow(2)) / 4
+    return torch.exp(-torch.sqrt(wasserstein_2 + eps) / max(float(constant), eps))
+
+
 def mask_iou(mask1: torch.Tensor, mask2: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:
     """Calculate masks IoU.
 

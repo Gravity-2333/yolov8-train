@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shlex
 import subprocess
 import sys
@@ -43,7 +44,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name", default="dental_ablation")
     parser.add_argument("--project", default="runs/detect/dental_neckplus")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--bbox-loss-type", default="ciou")
+    parser.add_argument("--bbox-loss-type", default="ciou", choices=("ciou", "nwd_ciou"))
+    parser.add_argument("--nwd-ratio", type=float, default=0.5)
+    parser.add_argument("--nwd-constant", type=float, default=12.8)
     parser.add_argument("--cache", default=None, help="Ultralytics cache option, e.g. ram, disk, True, False.")
     parser.add_argument("--exist-ok", action="store_true")
     return parser.parse_args()
@@ -62,8 +65,16 @@ def normalize_cache(value: str | None):
 
 def main() -> None:
     args = parse_args()
-    if args.bbox_loss_type != "ciou":
-        raise SystemExit("第一阶段尚未接入该 bbox loss，请使用 --bbox-loss-type ciou。")
+    nwd_ratio = min(max(float(args.nwd_ratio), 0.0), 1.0)
+    if args.nwd_constant <= 0:
+        raise SystemExit("--nwd-constant must be positive.")
+
+    for key in ("YOLO_DENTAL_BBOX_LOSS_TYPE", "YOLO_DENTAL_NWD_RATIO", "YOLO_DENTAL_NWD_CONSTANT"):
+        os.environ.pop(key, None)
+    os.environ["YOLO_DENTAL_BBOX_LOSS_TYPE"] = args.bbox_loss_type
+    if args.bbox_loss_type == "nwd_ciou":
+        os.environ["YOLO_DENTAL_NWD_RATIO"] = str(nwd_ratio)
+        os.environ["YOLO_DENTAL_NWD_CONSTANT"] = str(args.nwd_constant)
 
     commit = git_value(["rev-parse", "--short", "HEAD"])
     branch = git_value(["branch", "--show-current"])
@@ -118,6 +129,8 @@ def main() -> None:
         "workers": args.workers,
         "seed": args.seed,
         "bbox_loss_type": args.bbox_loss_type,
+        "nwd_ratio": nwd_ratio,
+        "nwd_constant": args.nwd_constant,
         "exist_ok_requested": args.exist_ok,
         "train_kwargs": train_kwargs,
         "pretrained_loading": {
@@ -128,7 +141,22 @@ def main() -> None:
     }
 
     print("Dental ablation training")
-    for key in ("branch", "commit", "dirty", "data_yaml", "model_yaml_or_weights", "weights", "imgsz", "epochs", "batch", "device", "workers", "bbox_loss_type"):
+    for key in (
+        "branch",
+        "commit",
+        "dirty",
+        "data_yaml",
+        "model_yaml_or_weights",
+        "weights",
+        "imgsz",
+        "epochs",
+        "batch",
+        "device",
+        "workers",
+        "bbox_loss_type",
+        "nwd_ratio",
+        "nwd_constant",
+    ):
         print(f"{key}: {metadata[key]}")
 
     model = YOLO(args.model)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +16,7 @@ from ultralytics.utils.ops import crop_mask, xywh2xyxy, xyxy2xywh
 from ultralytics.utils.tal import RotatedTaskAlignedAssigner, TaskAlignedAssigner, dist2bbox, dist2rbox, make_anchors
 from ultralytics.utils.torch_utils import autocast
 
-from .metrics import bbox_iou, probiou
+from .metrics import bbox_iou, bbox_nwd_similarity, probiou
 from .tal import bbox2dist, rbox2dist
 
 
@@ -114,6 +115,9 @@ class BboxLoss(nn.Module):
         """Initialize the BboxLoss module with regularization maximum and DFL settings."""
         super().__init__()
         self.dfl_loss = DFLoss(reg_max) if reg_max > 1 else None
+        self.bbox_loss_type = os.getenv("YOLO_DENTAL_BBOX_LOSS_TYPE", "ciou").strip().lower()
+        self.nwd_ratio = min(max(float(os.getenv("YOLO_DENTAL_NWD_RATIO", "0.5")), 0.0), 1.0)
+        self.nwd_constant = float(os.getenv("YOLO_DENTAL_NWD_CONSTANT", "12.8"))
 
     def forward(
         self,
@@ -130,6 +134,11 @@ class BboxLoss(nn.Module):
         """Compute IoU and DFL losses for bounding boxes."""
         weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
+        if self.bbox_loss_type == "nwd_ciou":
+            nwd = bbox_nwd_similarity(
+                pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, constant=self.nwd_constant
+            )
+            iou = (1.0 - self.nwd_ratio) * iou + self.nwd_ratio * nwd
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
         # DFL loss
