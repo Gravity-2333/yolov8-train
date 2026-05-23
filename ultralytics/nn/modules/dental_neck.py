@@ -29,6 +29,47 @@ class DentalECA(nn.Module):
         return x * self.sigmoid(y)
 
 
+class DentalEMA(nn.Module):
+    """Lightweight efficient multi-scale attention for dental lesion features.
+
+    This block preserves the input shape and is intended for a single P3 feature map. It uses grouped spatial context
+    along height/width plus a small local 3x3 branch, keeping the parameter increase modest.
+    """
+
+    def __init__(self, c1: int, groups: int = 8):
+        super().__init__()
+        groups = max(1, min(int(groups), c1))
+        while c1 % groups != 0 and groups > 1:
+            groups -= 1
+        self.groups = groups
+        self.c_group = c1 // groups
+        self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
+        self.pool_w = nn.AdaptiveAvgPool2d((1, None))
+        self.conv1x1 = nn.Conv2d(self.c_group, self.c_group, 1, 1, 0)
+        self.conv3x3 = nn.Conv2d(self.c_group, self.c_group, 3, 1, 1)
+        self.gn = nn.GroupNorm(1, self.c_group)
+        self.softmax = nn.Softmax(dim=-1)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply grouped EMA attention without changing feature shape."""
+        b, c, h, w = x.shape
+        group_x = x.reshape(b * self.groups, self.c_group, h, w)
+        x_h = self.pool_h(group_x)
+        x_w = self.pool_w(group_x).transpose(2, 3)
+        hw = self.conv1x1(torch.cat((x_h, x_w), dim=2))
+        x_h, x_w = torch.split(hw, [h, w], dim=2)
+        x1 = self.gn(group_x * self.sigmoid(x_h) * self.sigmoid(x_w.transpose(2, 3)))
+        x2 = self.conv3x3(group_x)
+        x11 = self.softmax(self.avg_pool(x1).flatten(2).transpose(1, 2))
+        x12 = x2.flatten(2)
+        x21 = self.softmax(self.avg_pool(x2).flatten(2).transpose(1, 2))
+        x22 = x1.flatten(2)
+        weights = (torch.matmul(x11, x12) + torch.matmul(x21, x22)).reshape(b * self.groups, 1, h, w)
+        return (group_x * self.sigmoid(weights)).reshape(b, c, h, w)
+
+
 class _BiFPNAdd(nn.Module):
     """Shared implementation for normalized weighted feature addition."""
 

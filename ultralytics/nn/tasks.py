@@ -48,6 +48,7 @@ from ultralytics.nn.modules import (
     ConvTranspose,
     Detect,
     DentalECA,
+    DentalEMA,
     DWConv,
     DWConvTranspose2d,
     Focus,
@@ -1779,9 +1780,9 @@ def parse_model(d, ch, verbose=True):
             c2 = args[1] if args[3] else args[1] * 4
         elif m is torch.nn.BatchNorm2d:
             args = [ch[f]]
-        elif m is DentalECA:
+        elif m in frozenset({DentalECA, DentalEMA}):
             if not isinstance(f, int):
-                raise ValueError("DentalECA expects a single input feature map.")
+                raise ValueError(f"{m.__name__} expects a single input feature map.")
             c1 = c2 = ch[f]
             args = [c1, *args]
         elif m in frozenset({BiFPN_Add2, BiFPN_Add3}):
