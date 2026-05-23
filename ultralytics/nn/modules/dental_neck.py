@@ -29,6 +29,38 @@ class DentalECA(nn.Module):
         return x * self.sigmoid(y)
 
 
+class DentalEMCALite(nn.Module):
+    """Lightweight efficient mixed channel-spatial attention for dental lesion features.
+
+    This EMCA-Lite block preserves the input shape. It combines ECA-style channel attention with a small spatial gate
+    derived from average/max channel projections. It is intended as a low-cost P3-only attention ablation.
+    """
+
+    def __init__(self, c1: int, k_size: int = 3, spatial_kernel: int = 7):
+        super().__init__()
+        if k_size % 2 == 0:
+            k_size += 1
+        if spatial_kernel % 2 == 0:
+            spatial_kernel += 1
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.channel_conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        self.spatial_conv = nn.Conv2d(
+            2, 1, kernel_size=spatial_kernel, padding=(spatial_kernel - 1) // 2, bias=False
+        )
+        self.mix = nn.Conv2d(c1, c1, 1, 1, 0, groups=max(1, min(c1, 4)), bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply channel and spatial attention while preserving tensor shape."""
+        channel = self.avg_pool(x).squeeze(-1).transpose(-1, -2)
+        channel = self.channel_conv(channel).transpose(-1, -2).unsqueeze(-1)
+        x_channel = x * self.sigmoid(channel)
+        spatial_avg = x_channel.mean(dim=1, keepdim=True)
+        spatial_max = x_channel.amax(dim=1, keepdim=True)
+        spatial = self.spatial_conv(torch.cat((spatial_avg, spatial_max), dim=1))
+        return self.mix(x_channel * self.sigmoid(spatial))
+
+
 class _BiFPNAdd(nn.Module):
     """Shared implementation for normalized weighted feature addition."""
 
