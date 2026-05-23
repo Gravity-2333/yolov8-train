@@ -1,0 +1,10 @@
+path: /root/autodl-tmp/work/datasets_yolo8/dentex_yolov8_3cls_v4_region
+train: images/train
+val: images/val
+test: images/test
+
+nc: 3
+names:
+  0: Caries
+  1: Periapical_Lesion
+  2: Impacted
