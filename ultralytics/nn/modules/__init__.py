@@ -76,7 +76,7 @@ from .conv import (
     RepConv,
     SpatialAttention,
 )
-from .dental_neck import BiFPN_Add2, BiFPN_Add3, DentalECA
+from .dental_neck import BiFPN_Add2, BiFPN_Add3, C2fFasterLite, DentalECA
 from .head import (
     OBB,
     OBB26,
@@ -138,6 +138,7 @@ __all__ = (
     "C2f",
     "C2fAttn",
     "C2fCIB",
+    "C2fFasterLite",
     "C2fPSA",
     "C3Ghost",
     "C3k2",
