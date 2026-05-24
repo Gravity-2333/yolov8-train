@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Validate multiple dental YOLOv8 weights on one validation split."""
+"""Validate multiple dental YOLOv8 weights on one dataset split."""
 
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--imgsz", type=int, default=960)
     parser.add_argument("--conf", type=float, default=0.001)
     parser.add_argument("--iou", type=float, default=0.7)
+    parser.add_argument("--split", choices=("val", "test"), default="val")
     parser.add_argument("--device", default="")
     parser.add_argument("--project", default="runs/val/dental_neckplus")
     parser.add_argument("--out-dir", default="reports/ablation")
@@ -70,7 +71,7 @@ def main() -> None:
             "imgsz": args.imgsz,
             "conf": args.conf,
             "iou": args.iou,
-            "split": "val",
+            "split": args.split,
             "project": args.project,
             "name": experiment,
             "exist_ok": True,
@@ -89,6 +90,7 @@ def main() -> None:
                 "imgsz": args.imgsz,
                 "conf": args.conf,
                 "iou": args.iou,
+                "split": args.split,
                 "precision": scalar(mean[0]),
                 "recall": scalar(mean[1]),
                 "mAP50": scalar(mean[2]),
@@ -110,6 +112,7 @@ def main() -> None:
             per_class_rows.append(
                 {
                     "experiment": experiment,
+                    "split": args.split,
                     "class_id": int(cls),
                     "class_name": class_names[cls],
                     "precision": scalar(p),
@@ -124,12 +127,19 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(summary_rows)
     with (out_dir / "per_class.csv").open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(per_class_rows[0].keys()) if per_class_rows else ["experiment", "class_id", "class_name", "precision", "recall", "mAP50", "mAP50-95"])
+        writer = csv.DictWriter(f, fieldnames=list(per_class_rows[0].keys()) if per_class_rows else ["experiment", "split", "class_id", "class_name", "precision", "recall", "mAP50", "mAP50-95"])
         writer.writeheader()
         writer.writerows(per_class_rows)
 
     best = max(summary_rows, key=lambda r: (r["mAP50-95"], r["recall"], r["mAP50"]))
-    lines = ["# Dental Ablation Comparison", "", "| experiment | P | R | mAP50 | mAP50-95 | GFLOPs | size MB |", "|---|---:|---:|---:|---:|---:|---:|"]
+    lines = [
+        "# Dental Ablation Comparison",
+        "",
+        f"- Split: `{args.split}`",
+        "",
+        "| experiment | P | R | mAP50 | mAP50-95 | GFLOPs | size MB |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
     for row in summary_rows:
         lines.append(
             f"| {row['experiment']} | {row['precision']:.4f} | {row['recall']:.4f} | {row['mAP50']:.4f} | "
@@ -139,7 +149,8 @@ def main() -> None:
         [
             "",
             "## Notes",
-            "- Validation uses the val split only; reserve test for final confirmation.",
+            f"- Results use the `{args.split}` split.",
+            "- Test split should be used only for locked final confirmation.",
             "- First-stage small/medium/large analysis should be read together with `dataset_audit_dental.py` outputs.",
         ]
     )
