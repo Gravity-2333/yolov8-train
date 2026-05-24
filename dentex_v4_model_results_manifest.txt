@@ -1,0 +1,6 @@
+date: Sat May 23 22:52:40 CST 2026
+repo: /root/autodl-tmp/work/yolov8-train
+branch: exp/dentex-v4-c2f-faster-lite
+commit: 1fdf7df Add DENTEX v4 C2f-Faster-lite full report
+included: v4 training runs, reports, compare outputs, weights, C2f source/yaml
+excluded: raw datasets_yolo8

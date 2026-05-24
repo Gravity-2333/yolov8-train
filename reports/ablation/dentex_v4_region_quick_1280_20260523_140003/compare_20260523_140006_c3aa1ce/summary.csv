@@ -1,0 +1,2 @@
+experiment,weights,imgsz,conf,iou,precision,recall,mAP50,mAP50-95,params,GFLOPs,model_size_MB,speed_preprocess,speed_inference,speed_postprocess
+dentex_v4_region_yolov8n_1280_quick_b16,runs/detect/dentex_v4_region_quick/dentex_v4_region_yolov8n_1280_quick_b16_20260523_133553_c3aa1ce/weights/best.pt,1280,0.001,0.7,0.5691359561195717,0.6614674256799494,0.6478689038331351,0.38593844769174285,3006233,32.3493888,6.021341323852539,1.151155349281099,1.525128751047074,0.4224450342238895
